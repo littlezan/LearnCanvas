@@ -158,11 +158,11 @@ class DoodleView @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         canvas.save()
-        canvas.scale(currentScale, currentScale, 0f, 0f)
-        canvas.scale(currentScale, currentScale, width / 2f, height / 2f)
+//        canvas.scale(currentScale, currentScale, 0f, 0f)
+        canvas.scale(currentScale, currentScale, scaleDetector.focusX, scaleDetector.focusY)
 //        canvas.translate((width - width * currentScale) / 2, (height - height * currentScale) / 2)
         canvas.drawRect(rect, rectPaint)
-        canvas.drawBitmap(bufferBitmap, 0f, 0f, null)
+//        canvas.drawBitmap(bufferBitmap, 0f, 0f, null)
         canvas.restore()
     }
 
