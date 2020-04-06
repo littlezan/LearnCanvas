@@ -97,6 +97,8 @@ class DoodleView @JvmOverloads constructor(
         })
 
 
+    private var scalePointX = 0f
+    private var scalePointY = 0f
     private val scaleDetector = ScaleGestureDetector(context,
         object : ScaleGestureDetector.OnScaleGestureListener {
 
@@ -106,6 +108,8 @@ class DoodleView @JvmOverloads constructor(
 
             override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
                 initialCurrentScale = currentScale
+                scalePointX = detector.focusX
+                scalePointY = detector.focusY
                 return true
             }
 
@@ -113,7 +117,8 @@ class DoodleView @JvmOverloads constructor(
             }
 
             override fun onScale(detector: ScaleGestureDetector): Boolean {
-
+                scalePointX = detector.focusX
+                scalePointY = detector.focusY
                 currentScale = initialCurrentScale * detector.scaleFactor
                 currentScale = currentScale.coerceAtLeast(1f)
                 invalidate()
@@ -159,11 +164,15 @@ class DoodleView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         canvas.save()
 //        canvas.scale(currentScale, currentScale, 0f, 0f)
-        canvas.scale(currentScale, currentScale, scaleDetector.focusX, scaleDetector.focusY)
+//        if (scaleDetector.isInProgress) {
+
+            canvas.scale(currentScale, currentScale, scalePointX, scalePointY)
+//        }
 //        canvas.translate((width - width * currentScale) / 2, (height - height * currentScale) / 2)
         canvas.drawRect(rect, rectPaint)
-//        canvas.drawBitmap(bufferBitmap, 0f, 0f, null)
+        canvas.drawBitmap(bufferBitmap, 0f, 0f, null)
         canvas.restore()
+
     }
 
     private fun loge(log: String) {
