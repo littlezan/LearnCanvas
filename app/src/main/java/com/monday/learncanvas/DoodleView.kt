@@ -49,6 +49,15 @@ class DoodleView @JvmOverloads constructor(
         strokeJoin = Paint.Join.ROUND
     }
 
+    private lateinit var pointer: Point
+    private val pointerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 10f.dpToPx
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+        color = Color.RED
+    }
+
     private var currentScale = 1f
 
 
@@ -59,11 +68,62 @@ class DoodleView @JvmOverloads constructor(
             private var lastX: Float = 0f
             private var lastY: Float = 0f
 
+            private fun resetLastXY(eventX: Float, eventY: Float) {
+                //x轴
+                lastX = resizeScaledX(eventX)
+
+                //y轴
+                lastY = resizeScaledY(eventY)
+
+//                lastY = (eventY) * currentScale
+//                lastY = (eventY) / currentScale
+//                lastX = (eventX)
+//                lastY = (eventY)
+            }
+
+            private fun resizeScaledX(eventX: Float): Float {
+                //x轴
+//                return when {
+//                    eventX > scalePointX -> {
+//                        //x-
+//                        (eventX) / currentScale
+//
+//                    }
+//                    eventX == scalePointX -> {
+//                        eventX
+//                    }
+//                    else -> {
+//                        //x+
+//                        (eventX) * currentScale
+//
+//                    }
+//                }
+                return eventX / currentScale
+            }
+
+            private fun resizeScaledY(eventY: Float): Float {
+                //y轴
+//                return when {
+//                    eventY > scalePointY -> {
+//                        //Y+
+//                        (eventY) * currentScale
+//
+//                    }
+//                    eventY == scalePointY -> {
+//                        eventY
+//                    }
+//                    else -> {
+//                        //Y-
+//                        ( eventY) / currentScale
+//                    }
+//                }
+                return eventY / currentScale
+            }
+
             override fun onDown(event: MotionEvent): Boolean {
                 initDrawingPath()
                 trackingPointerId = event.getPointerId(event.actionIndex)
-                lastX = event.x / currentScale
-                lastY = event.y / currentScale
+                resetLastXY(event.x, event.y)
                 path.moveTo(lastX, lastY)
                 invalidate()
                 return true
@@ -81,17 +141,31 @@ class DoodleView @JvmOverloads constructor(
                 val index: Int = currentEvent.findPointerIndex(trackingPointerId)
                 if (index == -1) return true
 
-                path.quadTo(
-                    lastX,
-                    lastY,
-                    (lastX + currentEvent.getX(index) / currentScale) / 2,
-                    (lastY + currentEvent.getY(index) / currentScale) / 2
+//                path.quadTo(
+//                    lastX,
+//                    lastY,
+//                    (lastX + (scalePointX + currentEvent.getX(index)) / currentScale) / 2,
+//                    (lastY + (scalePointY + currentEvent.getY(index)) / currentScale) / 2
+//                )
+                //x轴
+                val lineToX = resizeScaledX(currentEvent.getX((index)))
+
+                //y轴
+                val lineToY = resizeScaledY(currentEvent.getY((index)))
+                path.lineTo(
+                    lineToX,
+                    lineToY
                 )
+//                path.lineTo(
+//                    currentEvent.getX(index),
+//                    currentEvent.getY(index)
+//                )
                 //重新绘制
                 bufferCanvas.drawPath(path, paint)
                 invalidate()
-                lastX = currentEvent.getX(index) / currentScale
-                lastY = currentEvent.getY(index) / currentScale
+                resetLastXY(currentEvent.getX(index), currentEvent.getY(index))
+//                lastX = currentEvent.getX(index) / currentScale
+//                lastY = currentEvent.getY(index) / currentScale
                 return true
             }
         })
@@ -102,8 +176,6 @@ class DoodleView @JvmOverloads constructor(
     private val scaleDetector = ScaleGestureDetector(context,
         object : ScaleGestureDetector.OnScaleGestureListener {
 
-            private var bigScale = 1.5f
-            private var smallScale = 1f
             private var initialCurrentScale: Float = 0f
 
             override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
@@ -117,10 +189,12 @@ class DoodleView @JvmOverloads constructor(
             }
 
             override fun onScale(detector: ScaleGestureDetector): Boolean {
+
                 scalePointX = detector.focusX
                 scalePointY = detector.focusY
                 currentScale = initialCurrentScale * detector.scaleFactor
                 currentScale = currentScale.coerceAtLeast(1f)
+                loge("lll onScale ==> currentScale = $currentScale")
                 invalidate()
                 return false
             }
@@ -144,13 +218,18 @@ class DoodleView @JvmOverloads constructor(
             (width + rectWidth) / 2,
             (height + rectWidth) / 2
         )
+        pointer = Point(width / 2, height / 2)
     }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        var result = scaleDetector.onTouchEvent(event)
-        if (!scaleDetector.isInProgress && event.pointerCount == 1) {
-            result = detector.onTouchEvent(event)
+        var result = true
+        if (event.pointerCount > 1) {
+            result = scaleDetector.onTouchEvent(event)
+        } else {
+            if (!scaleDetector.isInProgress && event.pointerCount == 1) {
+                result = detector.onTouchEvent(event)
+            }
         }
         return result
     }
@@ -164,13 +243,12 @@ class DoodleView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         canvas.save()
 //        canvas.scale(currentScale, currentScale, 0f, 0f)
-//        if (scaleDetector.isInProgress) {
-
-            canvas.scale(currentScale, currentScale, scalePointX, scalePointY)
-//        }
+        canvas.scale(currentScale, currentScale, scalePointX, scalePointY)
 //        canvas.translate((width - width * currentScale) / 2, (height - height * currentScale) / 2)
         canvas.drawRect(rect, rectPaint)
+        canvas.drawPoint(20f.dpToPx, 20f.dpToPx, pointerPaint)
         canvas.drawBitmap(bufferBitmap, 0f, 0f, null)
+        canvas.drawPoint(scalePointX, scalePointY, pointerPaint)
         canvas.restore()
 
     }
