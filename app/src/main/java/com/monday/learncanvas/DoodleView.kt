@@ -59,11 +59,19 @@ class DoodleView @JvmOverloads constructor(
             private var lastX: Float = 0f
             private var lastY: Float = 0f
 
+            private fun resizeX(eventX: Float): Float {
+                return eventX / currentScale
+            }
+
+            private fun resizeY(eventY: Float): Float {
+                return eventY / currentScale
+            }
+
             override fun onDown(event: MotionEvent): Boolean {
                 initDrawingPath()
                 trackingPointerId = event.getPointerId(event.actionIndex)
-                lastX = event.x / currentScale
-                lastY = event.y / currentScale
+                lastX = resizeX(event.x)
+                lastY = resizeY(event.y)
                 path.moveTo(lastX, lastY)
                 invalidate()
                 return true
@@ -81,17 +89,21 @@ class DoodleView @JvmOverloads constructor(
                 val index: Int = currentEvent.findPointerIndex(trackingPointerId)
                 if (index == -1) return true
 
-                path.quadTo(
-                    lastX,
-                    lastY,
-                    (lastX + currentEvent.getX(index) / currentScale) / 2,
-                    (lastY + currentEvent.getY(index) / currentScale) / 2
+//                path.quadTo(
+//                    lastX,
+//                    lastY,
+//                    (lastX + currentEvent.getX(index) / currentScale) / 2,
+//                    (lastY + currentEvent.getY(index) / currentScale) / 2
+//                )
+                path.lineTo(
+                    resizeX(currentEvent.getX(index)),
+                    resizeY(currentEvent.getY(index))
                 )
                 //重新绘制
                 bufferCanvas.drawPath(path, paint)
                 invalidate()
-                lastX = currentEvent.getX(index) / currentScale
-                lastY = currentEvent.getY(index) / currentScale
+                lastX = resizeX(currentEvent.x)
+                lastY = resizeY(currentEvent.y)
                 return true
             }
         })
@@ -166,7 +178,7 @@ class DoodleView @JvmOverloads constructor(
 //        canvas.scale(currentScale, currentScale, 0f, 0f)
 //        if (scaleDetector.isInProgress) {
 
-            canvas.scale(currentScale, currentScale, scalePointX, scalePointY)
+        canvas.scale(currentScale, currentScale, scalePointX, scalePointY)
 //        }
 //        canvas.translate((width - width * currentScale) / 2, (height - height * currentScale) / 2)
         canvas.drawRect(rect, rectPaint)
